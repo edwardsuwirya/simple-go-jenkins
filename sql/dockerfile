@@ -1,0 +1,7 @@
+FROM postgres:alpine
+
+COPY init.sql /docker-entrypoint-initdb.d/
+
+ENV POSTGRES_USER smm
+ENV POSTGRES_PASSWORD 5mmB2
+ENV POSTGRES_DB smm_product
