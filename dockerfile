@@ -12,5 +12,9 @@ FROM alpine
 WORKDIR /app
 COPY --from=build-env /src/binary /app
 ENV PORT 8080
-
+ENV DB_HOST localhost
+ENV DB_PORT 5432
+ENV DB_USER postgres
+ENV DB_NAME postgres
+ENV DB_PASSWORD postgres
 ENTRYPOINT ["./binary"]
