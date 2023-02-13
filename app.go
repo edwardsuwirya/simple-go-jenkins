@@ -22,14 +22,36 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPassword, dbName)
+	run(port, dsn, *migration)
+}
+func initRouter(route *gin.Engine, db *gorm.DB) {
+	route.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	route.GET("/products", func(c *gin.Context) {
+		var products []dto.Product
+		db.Model(&models.ProductCategory{}).Preload("Products").Find(&products)
+		err := db.Model(&models.Product{}).Select("m_product.id", "m_product.product_name", "m_product.category_id", "m_product_category.category_name").Joins("JOIN m_product_category on m_product_category.id=m_product.category_id").Find(&products).Error
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		c.JSON(200, gin.H{
+			"message": products,
+		})
+	})
+}
+
+func run(port string, dsn string, forMigration bool) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Println("Database connected")
-
-	if *migration {
+	if forMigration {
 		err := db.AutoMigrate(&models.Product{}, &models.ProductCategory{})
 		if err != nil {
 			return
@@ -44,29 +66,10 @@ func main() {
 		db.Create(prods)
 	} else {
 		route := gin.Default()
-		route.GET("/ping", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"message": "pong",
-			})
-		})
-
-		route.GET("/products", func(c *gin.Context) {
-			var products []dto.Product
-			db.Model(&models.ProductCategory{}).Preload("Products").Find(&products)
-			err := db.Model(&models.Product{}).Select("m_product.id", "m_product.product_name", "m_product.category_id", "m_product_category.category_name").Joins("JOIN m_product_category on m_product_category.id=m_product.category_id").Find(&products).Error
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			c.JSON(200, gin.H{
-				"message": products,
-			})
-		})
-
+		initRouter(route, db)
 		err = route.Run(fmt.Sprintf(":%s", port))
 		if err != nil {
 			log.Fatalf("Server is not running %s", err)
 		}
 	}
-
 }
