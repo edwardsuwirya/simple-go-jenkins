@@ -10,8 +10,7 @@ import (
 func main() {
 	port := os.Getenv("PORT")
 	log.Println("Hello World")
-	route := gin.Default()
-	run(route, port)
+	run(port)
 }
 
 func initRouter(route *gin.Engine) {
@@ -22,7 +21,8 @@ func initRouter(route *gin.Engine) {
 	})
 }
 
-func run(route *gin.Engine, port string) {
+func run(port string) {
+	route := gin.Default()
 	initRouter(route)
 	err := route.Run(fmt.Sprintf(":%s", port))
 	if err != nil {
